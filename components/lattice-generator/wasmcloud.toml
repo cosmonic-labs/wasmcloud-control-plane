@@ -1,0 +1,8 @@
+name = "lattice-generator"
+language = "rust"
+type = "component"
+version = "0.1.0"
+
+[component]
+wit-world = "lattice-generator"
+wasm_target = "wasm32-wasi-preview2"

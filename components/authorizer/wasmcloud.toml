@@ -1,0 +1,8 @@
+name = "authorizer"
+language = "rust"
+type = "component"
+version = "0.1.0"
+
+[component]
+wit-world = "authorizer"
+wasm_target = "wasm32-wasi-preview2"

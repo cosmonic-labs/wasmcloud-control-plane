@@ -1,0 +1,64 @@
+interface authorizer-types {
+  record error {
+    // An error message
+    message: option<string>,
+    code: error-code,
+  }
+
+  record decision {
+    allowed: bool,
+    role: option<string>,
+    metadata: option<list<tuple<string,string>>>,
+  }
+
+  enum error-code {
+    // The check failed bcause of an error upstream of this component.
+    upstream,
+    // The check failed because of an internal, unknown error.
+    internal,
+  }
+
+  record context {
+    // The ID of the lattice the caller is attempting to access.
+    lattice-id: string,
+
+    // The values below are a subset of the values in
+    // https://pkg.go.dev/github.com/nats-io/jwt/v2#ConnectOptions.
+    // An opaque base64 encoded token that can be used to pass in any
+    // additional information that should be parsed by the authorizer.
+    token: option<string>,
+
+    username: option<string>,
+    // Should this actually be a secret-value from the secrets wit? We're only
+    // passing it in to this particular function and the implementers shouldn't
+    // actually do anything with the value remotely since this API isn't going
+    // to be callable externally.
+    password: option<string>,
+
+    // Client certificates if provided by the caller.
+    tls: option<tls>,
+  }
+
+
+  // A subset of https://pkg.go.dev/github.com/nats-io/jwt/v2#ClientTLS, which
+  // stores the client cerificate information of the caller.
+  record tls {
+    // Could include cipher, version and certificate chain but this works
+    // for now.
+    certificates: list<string>
+  }
+}
+
+
+interface callout-authorizer {
+  use authorizer-types.{context, error, decision};
+  // Determine if a auth-callout request should be granted based on additional
+  // context passed to this component.
+  // This is not intended to replace the base set of auth-callout checks, but
+  // is instead used by wasmCloud platform administrators to apply additional
+  // verification or restrictions on user authentication.
+  // The primary use case is for users or hosts to pass in opaque tokens that
+  // may contain OIDC JWTs, AWS EC2 Identity Documents, SPIFEE SVIDs, etc. that
+  // are used to assert the caller's identity.
+  authorized: func(ctx: context) -> result<decision, error>;
+}

@@ -1,0 +1,13 @@
+[package]
+name = "lattice-generator"
+edition = "2021"
+version = "0.1.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow =  { workspace = true }
+nats-jwt = { workspace = true }
+nkeys = { version = "0.4" }
+wit-bindgen = "0.32"

@@ -1,0 +1,207 @@
+interface lattice-types {
+  record lattice {
+    // Metadata relating to the lattice
+    metadata: metadata,
+    // The NATS account this lattice is bound to
+    account: option<string>,
+    /// The sigining keys associated with the NATS account
+    // TODO decide if we should make a record type for signing keys that
+    // optionally includes the role name. We can get at that through the
+    // account JWT which is what matters when issuing credentials.
+    signing-keys: option<list<string>>,
+    // A description of the lattice
+    description: option<string>,
+    // Whether the lattice can be deleted. This needs to be true in order to
+    // delete the lattice.
+    deletable: bool,
+    // The current status of the lattice
+    status: lattice-status,
+  }
+
+  // TODO: this should be imported from another package that defines common
+  // things.
+  record metadata {
+    // The name of the object
+    name: string,
+    // The version of the object
+    version: string,
+    // The UID of the object. This is to distinguish between objects with the
+    // same name that may have existed in different points in time.
+    uid: string,
+    // Set of annotations on the object. Meant for automated use.
+    annotations: list<tuple<string, string>>,
+    // Set of labels on the object. Meant for human use.
+    labels: list<tuple<string, string>>,
+  }
+
+  record lattice-status {
+    // The current phase of the lattice
+    phase: lattice-phase,
+  }
+
+  enum lattice-phase {
+    provisioning,
+    created,
+    deleting,
+  }
+
+  record lattice-add-request {
+    // The lattice to add
+    lattice: lattice,
+  }
+
+  record lattice-add-response {
+    // The version of the created lattice
+    version: string,
+  }
+
+  record lattice-update {
+    // The lattice to update
+    lattice: string,
+    // The account to bind the lattice to
+    account: option<string>,
+    // The signing keys to associate with the lattice
+    signing-keys: option<list<string>>,
+    // A description of the lattice
+    description: option<string>,
+    // Whether the lattice can be deleted
+    deletable: option<bool>,
+  }
+  record lattice-update-request {
+    // The lattice to update
+    update: lattice-update,
+    // The fields to update on the lattice
+    update-mask: field-mask,
+  }
+
+  record lattice-update-response {
+    // The updated lattice version
+    version: string,
+  }
+
+  record lattice-delete-request {
+    // The lattice to delete
+    lattice: string
+  }
+
+  record lattice-delete-response {
+    // The deleted lattice
+    lattice: lattice,
+  }
+
+  record lattice-watch-request {
+    // The lattices to watch
+    lattices: option<list<string>>,
+  }
+
+  record lattice-get-request {
+    // The lattices to get
+    lattices: list<string>,
+  }
+
+  record lattice-get-response {
+    // The list of requested lattices
+    lattices: list<lattice>,
+  }
+
+  // Literally a port of the protobuf FieldMask message
+  // TODO should this just be a flags type? It would work well other than for
+  // nested fields as a generic thing
+  record field-mask {
+    // The fields in the underlying type to update or manipulate. See
+    // https://protobuf.dev/reference/protobuf/google.protobuf/#field-mask for
+    // the inspiration behind this type
+    paths: list<string>,
+  }
+
+  record health {
+    // Whether or not the service is ready
+    ready: bool,
+    // An optional message to include on the response
+    message: option<string>,
+  }
+
+  enum health-status {
+    ready,
+    not-ready,
+  }
+
+  // TODO promote to a top-level type
+  record lattice-lifecycle-error {
+    // The kind of error that occurred
+    kind: lifecycle-error-kind,
+    // An optional message to include on the response
+    message: option<string>,
+  }
+
+  // TODO should these just be basically the google.rpc codes?
+  enum lifecycle-error-kind {
+    not-found,
+    already-exists,
+    invalid-argument,
+    internal,
+    unknown,
+  }
+}
+
+interface lattice-service {
+  use lattice-types.{lattice, lattice-add-request, lattice-add-response, lattice-update-request, lattice-update-response, lattice-delete-request, lattice-delete-response, lattice-watch-request, lattice-get-request, lattice-get-response, health, metadata, lattice-status};
+
+  // TODO should we drop `-lattice` after all these? It's kind of obvious what we're trying to do
+  // TODO consider using the common error type and returning results for everything other than the watch request (?)
+  add-lattice: func(request: lattice-add-request) -> result<lattice-add-response, string>;
+  update-lattice: func(request: lattice-update-request) -> lattice-update-response;
+  delete-lattice: func(request: lattice-delete-request) -> lattice-delete-response;
+  watch-lattices: func(request: lattice-watch-request) -> result<stream<lattice>, string>;
+  get-lattices: func(request: lattice-get-request) -> lattice-get-response;
+  list-lattices: func() -> list<string>;
+  // TODO this should really be another interface we import so we can use it in all services
+  // Also should it just be defined at the top level and not per service?
+  health-check: func() -> health;
+}
+
+interface lattice-lifecycle {
+  use lattice-types.{lattice, lattice-status, lattice-phase, lattice-lifecycle-error, lifecycle-error-kind};
+
+  record context {
+    // The lattice bind to a NATS account
+    lattice: lattice,
+    // Public operator key
+    operator-key: option<string>,
+    // Public key of the WASMCLOUD_SYSTEM account
+    system-account : option<string>,
+    // Key-value pairs to include as metadata on the generated account JWT
+    additional-metadata: option<list<tuple<string, string>>>,
+  }
+
+  // TODO: do we even need to return this bundle if the underlying component is
+  // taking care of archiving the values?
+  record generated-account {
+    // The account JWT
+    encoded: string,
+    // The account seed
+    seed: string,
+    // Siging key seeds
+    signing-keys: list<string>,
+  }
+
+  record create-lattice-response {
+    // The lattice bound to a NATS account with all of the public keys included
+    lattice: lattice,
+    // The account if one was generated
+    account: option<generated-account>,
+  }
+
+  create: func(context: context) -> result<create-lattice-response, lattice-lifecycle-error>;
+  update: func(context: context) -> result<lattice, lattice-lifecycle-error>;
+  delete: func(lattice: lattice) -> result<lattice, lattice-lifecycle-error>;
+}
+
+interface lattice-account-update {
+  // Push an account JWT to a NATS cluster
+  update: func(jwt: string) -> result<_, string>;
+  // Store an account seed in the secrets store
+  store-key: func(key: string, seed: string) -> result<_, string>;
+  // Delete an account seed from the secrets store
+  delete-key: func(key: string) -> result<_, string>;
+}

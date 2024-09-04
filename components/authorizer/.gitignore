@@ -1,0 +1,4 @@
+# Wash build artifacts
+build/
+
+target/

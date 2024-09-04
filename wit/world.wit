@@ -1,0 +1,38 @@
+package wasmcloud:control@0.1.0;
+
+
+world imports {
+  import lattice-service;
+}
+
+//world imports {
+//  import lattice-types;
+//}
+
+world lattice-server {
+  import lattice-types;
+  export lattice-service;
+}
+
+//world lattice-client {
+//  import lattice-service;
+//}
+
+//world control-server {
+//  export lattice-service;
+//}
+
+world authorizer {
+  export callout-authorizer;
+}
+
+world lattice-generator {
+  import wasi:random/random@0.2.1;
+  export lattice-lifecycle;
+}
+
+world interfaces {
+  import wasmcloud:secrets/store@0.1.0-draft;
+  import wasmcloud:secrets/reveal@0.1.0-draft;
+  import lattice-account-update;
+}

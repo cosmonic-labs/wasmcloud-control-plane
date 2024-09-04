@@ -1,0 +1,33 @@
+[authorization.user]
+account = "ADBXQJUCJ3G4W6WIPKKJPPXITFDIL7NADV4H334U6PV3TBSY5KA3ZD5N"
+signing_key_seed = "SA..."
+encryption_key_seed = "SX..."
+credsfile = "/path/to/user-auth-writer.creds"
+
+#[authorization.user.component.source.oci]
+#image = ""
+
+[authorization.user.component.source.nats]
+bucket = "WASMCLOUD_OBJECTS"
+key = "user_auth@0.0.1.wasm"
+
+[authorization.host]
+account = "AAC7W3TTTXJSHBNJ5DI2JVXFKCSXNZK4EFA7LB7BWDR2UJGFFHBR7I4L"
+
+signing_key_seed = "SA..."
+encryption_key_seed = "SX..."
+credsfile = "/path/to/host-auth-writer.creds"
+
+[authorization.host.component.source.nats]
+bucket = "WASMCLOUD_OBJECTS"
+key = "host_auth@0.0.1.wasm"
+
+[lattices]
+# TODO this doesn't do anything, but it should
+secrets_backend = "internal_store"
+wasmcloud_system_account = "AAC7W3TTTXJSHBNJ5DI2JVXFKCSXNZK4EFA7LB7BWDR2UJGFFHBR7I4L"
+operator_public_key = "OC4FIBI43ZRXK53COJI32ACRTYXEFEYSN75ZL3QTA2K57GSVMYMYPS57"
+
+[lattices.component.source.nats]
+bucket = "WASMCLOUD_OBJECTS"
+key = "generator@0.0.1.wasm"

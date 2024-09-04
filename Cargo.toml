@@ -1,0 +1,115 @@
+[package]
+name = "wasmcloud-hub"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = ["components/*"]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+
+[dependencies]
+anyhow = "1"
+async-nats = { workspace = true }
+async-trait = { workspace = true }
+bytes = "1"
+clap = {version = "4", features = ["derive", "env"]}
+futures = "0.3"
+hex = "0.4"
+http = { workspace = true }
+nats-jwt = { workspace = true }
+nkeys = { workspace = true }
+oci-distribution = { workspace = true }
+prost = { workspace = true }
+prost-types = { workspace = true }
+reqwest = { workspace = true }
+secrecy = { workspace = true }
+secrets-nats-kv = { workspace = true }
+serde = {version = "1", features = ["derive"]}
+serde_json = "1"
+sha2 = "0.10"
+tokio = {version = "1", features = ["full"]}
+tokio-stream = { workspace = true }
+tokio-util = { workspace = true }
+toml = "0.8"
+tracing = { version = "0.1", features = ["log"] }
+tracing-futures = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"] }
+ulid = {version = "1.1", features = ["serde"]}
+uuid = {version = "1.10", features = ["serde", "v4"]}
+wadm-client = { workspace = true }
+wasmcloud-secrets-client = { workspace = true }
+wasmcloud-secrets-types = { workspace = true }
+wasmtime = { workspace = true, features = [
+    "addr2line",
+    "async",
+    "cache",
+    "component-model",
+    "coredump",
+    "cranelift",
+    "gc",
+    "parallel-compilation",
+    "pooling-allocator",
+] }
+wasmtime-wasi = { workspace = true }
+wasmtime-wasi-http = { workspace = true }
+wit-bindgen = { workspace = true }
+wit-bindgen-wrpc = { workspace = true }
+wrpc-transport = { workspace = true }
+wrpc-transport-nats = { workspace = true }
+wrpc-pack = { workspace = true }
+
+[dev-dependencies]
+crossbeam-utils = { workspace = true }
+handlebars = { workspace = true }
+tempfile = { workspace = true }
+testcontainers = { workspace = true }
+
+[workspace.dependencies]
+anyhow = "1"
+async-nats = {version = "0.36", features = ["service"]}
+async-trait = "0.1"
+bytes = "1"
+clap = {version = "4", features = ["derive", "env"]}
+crossbeam-utils = "0.8"
+futures = "0.3"
+handlebars = "6"
+hex = "0.4"
+http = "1.1"
+nkeys = {version = "0.4", features = ["xkeys"]}
+nats-jwt = { git = "https://github.com/cosmonic-labs/nats-jwt.git", branch = "main" }
+oci-distribution = { version = "0.11", features = ["rustls-tls"] }
+prost = { version = "0.13", features = ["derive"] }
+prost-types = { version = "0.13"}
+reqwest = {version = "0.12.7", features = ["json", "rustls-tls", "gzip", "brotli", "zstd"]}
+secrecy = {version = "0.8", features = ["serde"]}
+serde = {version = "1", features = ["derive"]}
+serde_json = "1"
+sha2 = "0.10"
+tempfile = "3"
+testcontainers = { version = "0.22", features = ["watchdog"] }
+tokio = {version = "1", features = ["full"]}
+tokio-util = {version = "0.7", features = ["codec"]}
+tokio-stream = "0.1"
+toml = "0.8"
+tracing = { version = "0.1", features = ["log"] }
+tracing-futures = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"] }
+ulid = {version = "1.1", features = ["serde"]}
+uuid = {version = "1.10", features = ["serde", "v4"]}
+wadm-client = "0.3.0"
+wasmtime = { version = "24", default-features = false }
+wasmtime-wasi = { version = "24", default-features = false }
+wasmtime-wasi-http = { version = "24", default-features = false }
+wit-bindgen = "0.32"
+wit-bindgen-wrpc = "0.6"
+wrpc-transport-nats = "0.23"
+wrpc-transport = "0.26"
+wrpc-pack = "0.1"
+
+# TODO pull these in as crates
+secrets-nats-kv = { "git" = "https://github.com/wasmCloud/wasmCloud.git", tag = "v1.2.0" }
+wasmcloud-secrets-client = { "git" = "https://github.com/wasmCloud/wasmCloud.git", tag = "v1.2.0" }
+wasmcloud-secrets-types = { "git" = "https://github.com/wasmCloud/wasmCloud.git", tag = "v1.2.0" }
