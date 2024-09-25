@@ -10,6 +10,12 @@ resolver = "2"
 [workspace.package]
 edition = "2021"
 
+[[bin]]
+name = "wasmcloud-hub"
+
+[[bin]]
+name = "lattice-ctl"
+
 [dependencies]
 anyhow = "1"
 async-nats = { workspace = true }

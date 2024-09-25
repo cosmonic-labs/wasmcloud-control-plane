@@ -94,6 +94,7 @@ impl LatticeWrpcApi {
 
         // TODO this is all duplicate code. Unduplicate it.
         if let Some(lattice) = &config.lattices {
+            info!("loading lattice component");
             let comp = &lattice.component;
             let c = Self::load_component(comp.source.clone(), server.client.clone()).await?;
             let compiled = Component::from_binary(&server.engine, &c)?;

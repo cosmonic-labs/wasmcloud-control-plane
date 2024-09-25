@@ -23,7 +23,7 @@ go build
 nats-server -c work/resolver.conf
 
 # Push the JWTs to the NATS server
-nsc push -a
+nsc push -A
 ```
 
 ## Accounts
