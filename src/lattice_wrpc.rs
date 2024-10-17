@@ -374,7 +374,7 @@ impl lattice_service::Handler<Option<HeaderMap>> for LatticeWrpcApi {
         &self,
         _cx: Option<async_nats::HeaderMap>,
         req: LatticeUpdateRequest,
-    ) -> anyhow::Result<LatticeUpdateResponse> {
+    ) -> anyhow::Result<Result<LatticeUpdateResponse, String>> {
         if req.update_mask.paths.is_empty() {
             bail!("No paths provided for update")
         }
@@ -449,9 +449,9 @@ impl lattice_service::Handler<Option<HeaderMap>> for LatticeWrpcApi {
                 .put(lattice.metadata.name.clone(), buf.freeze())
                 .await?;
         }
-        Ok(LatticeUpdateResponse {
+        Ok(Ok(LatticeUpdateResponse {
             version: lattice.metadata.version,
-        })
+        }))
     }
 
     async fn list_lattices(
@@ -480,7 +480,7 @@ impl lattice_service::Handler<Option<HeaderMap>> for LatticeWrpcApi {
         &self,
         _cx: Option<async_nats::HeaderMap>,
         req: LatticeGetRequest,
-    ) -> anyhow::Result<LatticeGetResponse> {
+    ) -> anyhow::Result<Result<LatticeGetResponse, String>> {
         let js = jetstream::new(self.client.clone());
         let bucket = js.get_key_value(LATTICE_BUCKET).await?;
         let mut lattices: Vec<Lattice> = Vec::new();
@@ -497,14 +497,14 @@ impl lattice_service::Handler<Option<HeaderMap>> for LatticeWrpcApi {
             };
             lattices.push(l);
         }
-        Ok(LatticeGetResponse { lattices: lattices })
+        Ok(Ok(LatticeGetResponse { lattices }))
     }
 
     async fn delete_lattice(
         &self,
         _cx: Option<async_nats::HeaderMap>,
         req: LatticeDeleteRequest,
-    ) -> anyhow::Result<LatticeDeleteResponse> {
+    ) -> anyhow::Result<Result<LatticeDeleteResponse, String>> {
         let js = jetstream::new(self.client.clone());
         let bucket = js.get_key_value(LATTICE_BUCKET).await?;
         let mut lattice: Lattice = match bucket.get(&req.lattice).await {
@@ -515,7 +515,7 @@ impl lattice_service::Handler<Option<HeaderMap>> for LatticeWrpcApi {
                 let mut buf = BytesMut::from(l.unwrap());
                 wrpc_pack::unpack(&mut buf)?
             }
-            Err(e) => bail!("Failed to get lattice"),
+            Err(_e) => bail!("Failed to get lattice"),
         };
 
         // check for running applications
@@ -547,7 +547,7 @@ impl lattice_service::Handler<Option<HeaderMap>> for LatticeWrpcApi {
             .put(lattice.metadata.name.clone(), buf.freeze())
             .await?;
         bucket.delete(lattice.metadata.name.clone()).await?;
-        Ok(LatticeDeleteResponse { lattice })
+        Ok(Ok(LatticeDeleteResponse { lattice }))
     }
 
     async fn watch_lattices(
@@ -565,14 +565,22 @@ impl lattice_service::Handler<Option<HeaderMap>> for LatticeWrpcApi {
         tokio::spawn(async move {
             while let Some(item) = streams.next().await {
                 if let Ok(item) = item {
-                    let mut buf = BytesMut::from(item.value);
-                    if let Ok(l) = wrpc_pack::unpack::<Lattice>(&mut buf) {
-                        if tx.send(vec![l]).await.is_err() {
-                            debug!("stream receiver closed");
+                    let buf = item.value.clone();
+                    let mut b = BytesMut::from(buf);
+                    match wrpc_pack::unpack::<Lattice>(&mut b) {
+                        Ok(l) => {
+                            if tx.send(vec![l]).await.is_err() {
+                                debug!("stream receiver closed");
+                                return;
+                            }
+                        }
+                        Err(e) => {
+                            error!("Error unpacking lattice: {}", e);
                             return;
                         }
                     }
                 } else {
+                    error!("Error getting item from stream");
                     continue;
                 };
             }
@@ -830,6 +838,7 @@ mod test {
 
         let result = lattice_service::update_lattice(&wrpc, None, &update)
             .await
+            .unwrap()
             .unwrap();
         assert_ne!(result.version, "");
         assert_ne!(result.version, resp.version);

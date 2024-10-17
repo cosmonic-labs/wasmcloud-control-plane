@@ -150,10 +150,10 @@ interface lattice-service {
   // TODO should we drop `-lattice` after all these? It's kind of obvious what we're trying to do
   // TODO consider using the common error type and returning results for everything other than the watch request (?)
   add-lattice: func(request: lattice-add-request) -> result<lattice-add-response, string>;
-  update-lattice: func(request: lattice-update-request) -> lattice-update-response;
-  delete-lattice: func(request: lattice-delete-request) -> lattice-delete-response;
+  update-lattice: func(request: lattice-update-request) -> result<lattice-update-response, string>;
+  delete-lattice: func(request: lattice-delete-request) -> result<lattice-delete-response, string>;
   watch-lattices: func(request: lattice-watch-request) -> result<stream<lattice>, string>;
-  get-lattices: func(request: lattice-get-request) -> lattice-get-response;
+  get-lattices: func(request: lattice-get-request) -> result<lattice-get-response, string>;
   list-lattices: func() -> list<string>;
   // TODO this should really be another interface we import so we can use it in all services
   // Also should it just be defined at the top level and not per service?

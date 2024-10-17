@@ -1,5 +1,6 @@
 use async_nats::{Client, ConnectOptions};
 use clap::{Parser, Subcommand};
+use futures::{StreamExt, TryStreamExt};
 use nkeys::{KeyPair, XKey};
 use wasmcloud_hub::bindings::imports::wasmcloud::control::{lattice_service, lattice_types::*};
 use wasmcloud_hub::lattice_wrpc::LATTICE_SUBJECT;
@@ -36,6 +37,7 @@ enum Cmd {
         #[clap(short, long, required = true)]
         name: String,
     },
+    WatchLattices {},
 }
 
 async fn bootstrap(key_dir: String, enc_key: XKey, client: Client) {
@@ -83,7 +85,8 @@ async fn get_lattice(name: String, wrpc: wrpc_transport_nats::Client) {
             println!("Error getting lattice: {}", e);
             panic!("Error getting lattice: {}", e);
         }
-    };
+    }
+    .unwrap();
 
     let lattice = resp.lattices[0].clone();
     println!("{:?}", lattice);
@@ -139,6 +142,17 @@ async fn add_lattice(name: String, wrpc: wrpc_transport_nats::Client) {
     println!("{:?}", resp);
 }
 
+async fn watch_lattices(wrpc: wrpc_transport_nats::Client) {
+    let (l, _other) =
+        lattice_service::watch_lattices(&wrpc, None, &LatticeWatchRequest { lattices: None })
+            .await
+            .unwrap();
+    let mut lattices = l.unwrap();
+    while let Some(lattice) = lattices.next().await {
+        println!("{:?}", lattice);
+    }
+}
+
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
@@ -162,5 +176,8 @@ async fn main() {
         Cmd::AddLattice { name } => add_lattice(name, wrpc).await,
         Cmd::GetLattice { name } => get_lattice(name, wrpc).await,
         Cmd::DeleteLattice { name } => delete_lattice(name, wrpc).await,
+        Cmd::WatchLattices {} => {
+            watch_lattices(wrpc).await;
+        }
     }
 }

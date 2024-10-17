@@ -265,11 +265,11 @@ func createWasmCloudSystemAccount(opKey nkeys.KeyPair) (*Account, error) {
 	sys.Limits.JetStreamLimits.DiskMaxStreamBytes = -1
 	sys.Limits.JetStreamLimits.MemoryMaxStreamBytes = -1
 	sys.Mappings = map[jwt.Subject][]jwt.WeightedMapping{
-		"wadm.api.*.*.>": {
-			{
-				Subject: "wadm.api.{{wildcard(2)}}.>",
-			},
-		},
+		//"wadm.api.*.*.>": {
+		//	{
+		//		Subject: "wadm.api.{{wildcard(2)}}.>",
+		//	},
+		//},
 		"*.wasmbus.cfg.*.>": {
 			{
 				Subject: "wasmbus.cfg.{{wildcard(2)}}.>",
