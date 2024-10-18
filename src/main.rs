@@ -10,11 +10,11 @@ use clap::Parser;
 use nkeys::XKey;
 use tokio::task::JoinSet;
 use tracing::{error, info};
-use wasmcloud_hub::auth;
 use wasmcloud_hub::config::{load_config, Args};
 use wasmcloud_hub::lattice_wrpc::{LatticeWrpcApi, LATTICE_BUCKET};
 use wasmcloud_hub::secrets::SecretsClient;
 use wasmcloud_hub::vm;
+use wasmcloud_hub::{auth, lattice_proto::LatticeProtoApi};
 
 #[tokio::main]
 async fn main() {
@@ -87,14 +87,26 @@ async fn main() {
         args.clone(),
         core_client.clone(),
         engine.clone(),
-        secrets_client,
-        sys_client,
+        secrets_client.clone(),
+        sys_client.clone(),
     )
     .await
     .unwrap();
 
     info!("Starting lattice server");
     set.spawn(async move { lattice_server.run().await });
+
+    let lattice_proto_server = LatticeProtoApi::new(
+        config.clone(),
+        args.clone(),
+        core_client.clone(),
+        engine.clone(),
+        secrets_client,
+        sys_client,
+    )
+    .await
+    .unwrap();
+    set.spawn(async move { lattice_proto_server.run().await });
 
     if let Some(res) = set.join_next().await {
         error!("Error in lattice server: {:?}", res);

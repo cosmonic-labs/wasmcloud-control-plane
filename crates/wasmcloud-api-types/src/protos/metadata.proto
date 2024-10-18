@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package control.wasmcloud.dev;
+
+message Metadata {
+  // required
+  string name = 1;
+  // optional
+  map<string, string> labels = 2;
+  // optional
+  map<string, string> annotations = 3;
+  // required, set server-side
+  string version = 4;
+  // required, set server-side
+  string uid = 5;
+}

@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package control.wasmcloud.dev;
+
+import "src/protos/metadata.proto";
+import "google/protobuf/field_mask.proto";
+
+// TODO: we could generate stubs for this if we implement code generation with
+// some traits. Probably not worth it, but it's an option.
+//service LatticeAPI {
+//  rpc AddLattice (LatticeAddRequest) returns (LatticeAddResponse);
+//}
+
+message Lattice {
+  // required
+  Metadata meta = 1;
+  // required
+  LatticeSpec spec = 2;
+}
+
+message LatticeSpec {
+  // optional
+  string account = 1;
+  // optional
+  repeated string signing_keys = 2;
+  // optional
+  string description = 3;
+  /// required, set server-side
+  LatticeStatus status = 4;
+  // required
+  bool deletable = 5;
+}
+
+message LatticeStatus {
+  // required
+  LatticePhase phase = 1;
+}
+
+enum LatticePhase {
+  LATTICE_UNSPECIFIED = 0;
+  LATTICE_PROVISIONING = 1;
+  LATTICE_CREATED = 2;
+  LATTICE_DELETING = 3;
+}
+
+message LatticeAddRequest {
+   // required
+   Lattice lattice = 1;
+}
+
+message LatticeAddResponse {
+   // required
+  string version = 1;
+}
+
+message LatticeUpdate {
+  string account = 1;
+  repeated string signing_keys = 2;
+  string description = 3;
+  bool deletable = 4;
+}
+
+message LatticeUpdateRequest {
+  // required
+  LatticeUpdate update = 1;
+  // required
+  google.protobuf.FieldMask update_mask = 2;
+}
+
+message LatticeUpdateResponse {
+  // required
+  string version = 1;
+}
+
+message LatticeDeleteRequest { }
+
+message LatticeDeleteResponse {
+  Lattice lattice = 1;
+}
+
+message LatticeGetRequest {
+  // required
+  repeated string lattice = 1;
+}
+
+message LatticeGetResponse {
+  // required
+  repeated Lattice lattice = 1;
+}
+
+message LatticeWatchRequest {
+  repeated string lattices = 1;
+}
+
+message LatticeWatchResponse {
+    Lattice lattice = 1;
+}

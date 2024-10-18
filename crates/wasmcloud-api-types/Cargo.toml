@@ -1,0 +1,23 @@
+[package]
+name = "wasmcloud-api-types"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "lattice-proto-formatter"
+test = false
+bench = false
+required-features = ["cli"]
+
+[features]
+cli = ["clap"]
+
+[dependencies]
+bytes = { workspace = true }
+prost = { workspace = true, features = ["derive"]}
+prost-types = { workspace = true }
+clap = { workspace = true, optional = true }
+#wit-bindgen-wrpc = { workspace = true }
+
+[build-dependencies]
+prost-build = { version = "0.13"}

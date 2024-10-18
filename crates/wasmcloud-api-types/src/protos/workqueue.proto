@@ -1,0 +1,19 @@
+syntax = "proto3";
+package control.wasmcloud.dev;
+
+enum WorkOperation {
+  WORK_UNKNOWN = 0;
+  WORK_PROVISION = 1;
+  WORK_CREATE = 2;
+  WORK_UPDATE = 3;
+  WORK_DELETE = 4;
+}
+
+message WorkRequest {
+  // required
+  string name = 1;
+  // required
+  string kind = 2;
+  // required
+  WorkOperation operation = 3;
+}

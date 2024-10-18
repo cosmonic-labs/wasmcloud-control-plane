@@ -1,8 +1,11 @@
-use async_nats::{Client, ConnectOptions};
+use async_nats::{Client, ConnectOptions, Request};
 use clap::{Parser, Subcommand};
 use futures::{StreamExt, TryStreamExt};
 use nkeys::{KeyPair, XKey};
+use prost::Message;
+use wasmcloud_api_types::{self as ProtoApi, Lattice as ProtoLattice};
 use wasmcloud_hub::bindings::imports::wasmcloud::control::{lattice_service, lattice_types::*};
+use wasmcloud_hub::lattice_proto::LATTICE_SUBJECT as PROTO_LATTICE_SUBJECT;
 use wasmcloud_hub::lattice_wrpc::LATTICE_SUBJECT;
 use wasmcloud_hub::secrets::SecretsClient;
 
@@ -17,6 +20,9 @@ struct Args {
 
     #[clap(short, long, required = true)]
     key_dir: String,
+
+    #[clap(short, long)]
+    proto: bool,
 
     #[clap(subcommand)]
     cmd: Cmd,
@@ -142,6 +148,53 @@ async fn add_lattice(name: String, wrpc: wrpc_transport_nats::Client) {
     println!("{:?}", resp);
 }
 
+async fn add_lattice_proto(name: String, client: Client) {
+    let req = ProtoApi::LatticeAddRequest {
+        lattice: Some(ProtoLattice::default()),
+    };
+    let headers = wasmcloud_hub::lattice_proto::CONTENT_TYPE_HEADERS.clone();
+    let resp = client
+        .request_with_headers(
+            format!("{PROTO_LATTICE_SUBJECT}.add.{name}"),
+            headers,
+            req.encode_to_vec().into(),
+        )
+        .await
+        .unwrap();
+    let r = ProtoApi::LatticeAddResponse::decode(resp.payload).unwrap();
+    println!("{:?}", r.version);
+}
+
+async fn watch_lattices_proto(client: Client) {
+    let inbox = client.new_inbox();
+    let req = ProtoApi::LatticeWatchRequest::default();
+    let headers = wasmcloud_hub::lattice_proto::CONTENT_TYPE_HEADERS.clone();
+    let c2 = client.clone();
+    let i2 = inbox.clone();
+
+    println!("{:?}", inbox);
+
+    let jh = tokio::spawn(async move {
+        let mut sub = c2.subscribe(i2.clone()).await.unwrap();
+        while let Some(msg) = sub.next().await {
+            let r = ProtoApi::LatticeWatchResponse::decode(msg.payload).unwrap();
+            c2.publish(msg.reply.unwrap(), "".into()).await.unwrap();
+            println!("{:?}", r);
+        }
+    });
+
+    let req = Request::new()
+        .payload(req.encode_to_vec().into())
+        .headers(headers)
+        .inbox(inbox.clone());
+    client
+        .send_request(format!("{PROTO_LATTICE_SUBJECT}.watch"), req)
+        .await
+        .unwrap();
+
+    jh.await;
+}
+
 async fn watch_lattices(wrpc: wrpc_transport_nats::Client) {
     let (l, _other) =
         lattice_service::watch_lattices(&wrpc, None, &LatticeWatchRequest { lattices: None })
@@ -173,11 +226,21 @@ async fn main() {
             let enc_key = XKey::from_seed(enc.trim()).unwrap();
             bootstrap(args.key_dir, enc_key, client).await
         }
-        Cmd::AddLattice { name } => add_lattice(name, wrpc).await,
+        Cmd::AddLattice { name } => {
+            if args.proto {
+                add_lattice_proto(name, client).await;
+            } else {
+                add_lattice(name, wrpc).await;
+            }
+        }
         Cmd::GetLattice { name } => get_lattice(name, wrpc).await,
         Cmd::DeleteLattice { name } => delete_lattice(name, wrpc).await,
         Cmd::WatchLattices {} => {
-            watch_lattices(wrpc).await;
+            if args.proto {
+                watch_lattices_proto(client).await;
+            } else {
+                watch_lattices(wrpc).await;
+            }
         }
     }
 }

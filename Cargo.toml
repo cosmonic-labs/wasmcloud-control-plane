@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace]
-members = ["components/*"]
+members = ["components/*", "crates/*"]
 resolver = "2"
 
 [workspace.package]
@@ -67,6 +67,8 @@ wrpc-transport = { workspace = true }
 wrpc-transport-nats = { workspace = true }
 wrpc-pack = { workspace = true }
 
+wasmcloud-api-types = { workspace = true }
+
 [dev-dependencies]
 crossbeam-utils = { workspace = true }
 handlebars = { workspace = true }
@@ -89,7 +91,7 @@ nats-jwt = { git = "https://github.com/cosmonic-labs/nats-jwt.git", branch = "ma
 oci-distribution = { version = "0.11", features = ["rustls-tls"] }
 prost = { version = "0.13", features = ["derive"] }
 prost-types = { version = "0.13"}
-reqwest = {version = "0.12.7", features = ["json", "rustls-tls", "gzip", "brotli", "zstd"]}
+reqwest = {version = "0.12", features = ["json", "rustls-tls", "gzip", "brotli", "zstd"]}
 secrecy = {version = "0.8", features = ["serde"]}
 serde = {version = "1", features = ["derive"]}
 serde_json = "1"
@@ -114,6 +116,8 @@ wit-bindgen-wrpc = "0.6"
 wrpc-transport-nats = "0.23"
 wrpc-transport = "0.26"
 wrpc-pack = "0.1"
+
+wasmcloud-api-types = { path = "crates/wasmcloud-api-types" }
 
 # TODO pull these in as crates
 secrets-nats-kv = { "git" = "https://github.com/wasmCloud/wasmCloud.git", tag = "v1.2.0" }
