@@ -5,6 +5,7 @@ use crate::secrets::SecretsClient;
 use crate::vm::Ctx;
 use crate::{bindings, vm};
 use anyhow::{anyhow, bail, Context};
+use async_nats::jetstream::kv::{Entry, Operation};
 use async_nats::{
     jetstream::{
         self,
@@ -489,7 +490,8 @@ impl LatticeProtoApi {
             .phase = LatticePhase::LatticeDeleting.into();
         lattice.meta.as_mut().unwrap().version = Ulid::new().to_string();
 
-        let buf = BytesMut::new();
+        let mut buf = BytesMut::new();
+        lattice.encode(&mut buf)?;
         bucket.put(name, buf.freeze()).await?;
         bucket.delete(name).await?;
         let resp = LatticeDeleteResponse {
@@ -503,7 +505,7 @@ impl LatticeProtoApi {
         let js = jetstream::new(self.client.clone());
         let bucket = js.get_key_value(LATTICE_BUCKET).await?;
         let mut lattices: Vec<Lattice> = Vec::new();
-        for lattice in req.lattice {
+        for lattice in req.lattices {
             let l = match bucket.get(&lattice).await {
                 Ok(l) => {
                     if l.is_none() {
@@ -515,13 +517,12 @@ impl LatticeProtoApi {
             };
             lattices.push(l);
         }
-        Ok(Some(
-            LatticeGetResponse { lattice: lattices }
-                .encode_to_vec()
-                .into(),
-        ))
+        Ok(Some(LatticeGetResponse { lattices }.encode_to_vec().into()))
     }
 
+    // TODO if a client disconnects this will hang on to a subscription until it tries to send an
+    // update. At that point if it recieves no responders or an error then the subscription will
+    // terminate. We should fix that, but not sure on the best way to do that without a keep alive.
     async fn watch_lattices(&self, msg: &Message) -> anyhow::Result<Option<Bytes>> {
         let reply_to = match &msg.reply {
             Some(r) => r,
@@ -552,6 +553,11 @@ impl LatticeProtoApi {
                     continue;
                 }
             };
+            // Skip deletes for now, since you end up getting an empty lattice entry as a result.
+            if let Operation::Delete = entry.operation {
+                continue;
+            }
+
             let lattice = match Lattice::decode(entry.value) {
                 Ok(l) => l,
                 Err(e) => {

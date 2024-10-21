@@ -4763,7 +4763,6 @@ dependencies = [
  "prost",
  "prost-build",
  "prost-types",
- "wit-bindgen-wrpc",
 ]
 
 [[package]]

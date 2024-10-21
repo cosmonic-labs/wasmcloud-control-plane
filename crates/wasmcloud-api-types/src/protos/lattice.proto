@@ -80,12 +80,12 @@ message LatticeDeleteResponse {
 
 message LatticeGetRequest {
   // required
-  repeated string lattice = 1;
+  repeated string lattices = 1;
 }
 
 message LatticeGetResponse {
   // required
-  repeated Lattice lattice = 1;
+  repeated Lattice lattices = 1;
 }
 
 message LatticeWatchRequest {

@@ -76,6 +76,23 @@ async fn bootstrap(key_dir: String, enc_key: XKey, client: Client) {
     }
 }
 
+async fn get_lattice_proto(name: String, client: Client) {
+    let req = ProtoApi::LatticeGetRequest {
+        lattices: vec![name.clone()],
+    };
+    let headers = wasmcloud_hub::lattice_proto::CONTENT_TYPE_HEADERS.clone();
+    let resp = client
+        .request_with_headers(
+            format!("{PROTO_LATTICE_SUBJECT}.get.{name}"),
+            headers,
+            req.encode_to_vec().into(),
+        )
+        .await
+        .unwrap();
+    let r = ProtoApi::LatticeGetResponse::decode(resp.payload).unwrap();
+    println!("{:?}", r.lattices);
+}
+
 async fn get_lattice(name: String, wrpc: wrpc_transport_nats::Client) {
     let resp = match lattice_service::get_lattices(
         &wrpc,
@@ -96,6 +113,20 @@ async fn get_lattice(name: String, wrpc: wrpc_transport_nats::Client) {
 
     let lattice = resp.lattices[0].clone();
     println!("{:?}", lattice);
+}
+
+async fn delete_lattice_proto(name: String, client: Client) {
+    let req = ProtoApi::LatticeDeleteRequest::default();
+    let headers = wasmcloud_hub::lattice_proto::CONTENT_TYPE_HEADERS.clone();
+    let resp = client
+        .request_with_headers(
+            format!("{PROTO_LATTICE_SUBJECT}.delete.{name}"),
+            headers,
+            req.encode_to_vec().into(),
+        )
+        .await
+        .unwrap();
+    println!("{:?}", resp);
 }
 
 async fn delete_lattice(name: String, wrpc: wrpc_transport_nats::Client) {
@@ -192,7 +223,7 @@ async fn watch_lattices_proto(client: Client) {
         .await
         .unwrap();
 
-    jh.await;
+    let _ = jh.await;
 }
 
 async fn watch_lattices(wrpc: wrpc_transport_nats::Client) {
@@ -233,8 +264,20 @@ async fn main() {
                 add_lattice(name, wrpc).await;
             }
         }
-        Cmd::GetLattice { name } => get_lattice(name, wrpc).await,
-        Cmd::DeleteLattice { name } => delete_lattice(name, wrpc).await,
+        Cmd::GetLattice { name } => {
+            if args.proto {
+                get_lattice_proto(name, client).await;
+            } else {
+                get_lattice(name, wrpc).await;
+            }
+        }
+        Cmd::DeleteLattice { name } => {
+            if args.proto {
+                delete_lattice_proto(name, client).await;
+            } else {
+                delete_lattice(name, wrpc).await;
+            }
+        }
         Cmd::WatchLattices {} => {
             if args.proto {
                 watch_lattices_proto(client).await;
