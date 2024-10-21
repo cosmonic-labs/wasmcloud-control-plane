@@ -4755,6 +4755,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "wasmcloud-api-client"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-nats 0.36.0",
+ "futures",
+ "prost",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "wasmcloud-api-types",
+]
+
+[[package]]
 name = "wasmcloud-api-types"
 version = "0.1.0"
 dependencies = [
