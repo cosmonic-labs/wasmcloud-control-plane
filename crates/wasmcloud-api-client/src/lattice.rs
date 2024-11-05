@@ -1,5 +1,6 @@
 use async_nats::{Client as NatsClient, HeaderMap, Request, Subscriber};
 use futures::{Stream, StreamExt};
+use lattice::LatticeError;
 use prost::Message;
 use std::cell::LazyCell;
 use std::pin::Pin;
@@ -137,5 +138,16 @@ impl LatticeClient {
         Ok(watcher)
     }
 
-    pub async fn get() {}
+    pub async fn get(&self, request: LatticeGetRequest) -> Result<LatticeGetRequest, LatticeError> {
+        let headers = CONTENT_TYPE_HEADERS.clone();
+        let resp = self
+            .nats
+            .request(
+                format!("{LATTICE_SUBJECT}.get"),
+                request.encode_to_vec().into(),
+            )
+            .await;
+
+        todo!()
+    }
 }

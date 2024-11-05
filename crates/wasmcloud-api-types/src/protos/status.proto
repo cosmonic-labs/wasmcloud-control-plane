@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package control.wasmcloud.dev;
+import "google/protobuf/any.proto";
+
+message Status {
+  // The status code, which is a subset of the gRPC error codes.
+  int32 code = 1;
+
+  // A human readable message.
+  string message = 2;
+
+  // A list of messages that contain error details.
+  repeated google.protobuf.Any details = 3;
+}
+
+enum Code {
+  CODE_UNSPECIFIED         = 0;
+  CODE_OK                  = 1;
+  CODE_CANCELLED           = 2;
+  CODE_UNKNOWN             = 3;
+  CODE_INVALID_ARGUMENT    = 4;
+  CODE_DEADLINE_EXCEEDED   = 5;
+  CODE_NOT_FOUND           = 6;
+  CODE_ALREADY_EXISTS      = 7;
+  CODE_PERMISSION_DENIED   = 8;
+  CODE_RESOURCE_EXHAUSTED  = 9;
+  CODE_FAILED_PRECONDITION = 10;
+  CODE_ABORTED             = 11;
+  CODE_OUT_OF_RANGE        = 12;
+  CODE_UNIMPLEMENTED       = 13;
+  CODE_INTERNAL            = 14;
+  CODE_UNAVAILABLE         = 15;
+  CODE_DATA_LOSS           = 16;
+  CODE_UNAUTHENTICATED     = 17;
+}

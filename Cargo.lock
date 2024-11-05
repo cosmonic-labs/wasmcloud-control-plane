@@ -4762,6 +4762,7 @@ dependencies = [
  "async-nats 0.36.0",
  "futures",
  "prost",
+ "thiserror",
  "tokio",
  "tokio-util",
  "tracing",
@@ -4772,11 +4773,13 @@ dependencies = [
 name = "wasmcloud-api-types"
 version = "0.1.0"
 dependencies = [
+ "async-nats 0.36.0",
  "bytes",
  "clap",
  "prost",
  "prost-build",
  "prost-types",
+ "thiserror",
 ]
 
 [[package]]

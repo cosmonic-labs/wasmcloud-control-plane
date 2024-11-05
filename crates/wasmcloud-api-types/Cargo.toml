@@ -13,11 +13,12 @@ required-features = ["cli"]
 cli = ["clap"]
 
 [dependencies]
+async-nats = { workspace = true }
 bytes = { workspace = true }
+clap = { workspace = true, optional = true }
 prost = { workspace = true, features = ["derive"]}
 prost-types = { workspace = true }
-clap = { workspace = true, optional = true }
-#wit-bindgen-wrpc = { workspace = true }
+thiserror = { workspace = true }
 
 [build-dependencies]
 prost-build = { version = "0.13"}

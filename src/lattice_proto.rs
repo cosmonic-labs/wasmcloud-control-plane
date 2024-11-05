@@ -230,11 +230,11 @@ impl LatticeProtoApi {
             info!("Handling operation: {}", operation);
 
             let resp = match operation.as_str() {
-                "add" => handle.add_lattice(&lattice.unwrap(), &msg).await,
-                "update" => handle.update_lattice(&lattice.unwrap(), &msg).await,
-                "delete" => handle.delete_lattice(&lattice.unwrap(), &msg).await,
+                //"add" => handle.add_lattice(&lattice.unwrap(), &msg).await,
+                //"update" => handle.update_lattice(&lattice.unwrap(), &msg).await,
+                //"delete" => handle.delete_lattice(&lattice.unwrap(), &msg).await,
                 "get" => handle.get_lattices(&msg).await,
-                "watch" => handle.watch_lattices(&msg).await,
+                //"watch" => handle.watch_lattices(&msg).await,
                 _ => Err(anyhow::anyhow!("Invalid operation: {}", operation)),
             };
 
@@ -243,6 +243,7 @@ impl LatticeProtoApi {
                     if let Some(r) = resp {
                         let mut headers = HeaderMap::new();
                         headers.insert("Content-Type", MIME_TYPE);
+                        headers.insert("wasmcloud-api-error", "true");
                         if let Err(e) = handle
                             .client
                             .publish_with_headers(msg.reply.unwrap(), headers, r)
@@ -500,24 +501,55 @@ impl LatticeProtoApi {
         Ok(Some(resp.encode_to_vec().into()))
     }
 
-    async fn get_lattices(&self, msg: &Message) -> anyhow::Result<Option<Bytes>> {
-        let req = LatticeGetRequest::decode(msg.payload.clone())?;
+    async fn get_lattices(&self, msg: &Message) -> Result<LatticeGetResponse, Status> {
+        let req = match LatticeGetRequest::decode(msg.payload.clone()) {
+            Ok(r) => r,
+            Err(e) => {
+                return Err(Status {
+                    code: Code::InvalidArgument.into(),
+                    message: format!("failed to decode request: {e}"),
+                    details: vec![],
+                })
+            }
+        };
         let js = jetstream::new(self.client.clone());
-        let bucket = js.get_key_value(LATTICE_BUCKET).await?;
+        let bucket = match js.get_key_value(LATTICE_BUCKET).await {
+            Ok(s) => s,
+            Err(e) => {
+                return Err(Status {
+                    code: Code::FailedPrecondition.into(),
+                    message: format!("failed to get lattice from bucket: {e}"),
+                    details: vec![],
+                })
+            }
+        };
         let mut lattices: Vec<Lattice> = Vec::new();
         for lattice in req.lattices {
             let l = match bucket.get(&lattice).await {
                 Ok(l) => {
                     if l.is_none() {
-                        bail!("Lattice not found")
+                        let resp = Status {
+                            code: Code::NotFound.into(),
+                            message: "lattice not found".into(),
+                            details: vec![],
+                        };
+                        return Err(resp);
                     }
-                    Lattice::decode(l.unwrap())?
+                    Lattice::decode(l.unwrap()).map_err(|e| Status {
+                        code: Code::FailedPrecondition.into(),
+                        message: format!("failed to decode lattice: {e}"),
+                        details: vec![],
+                    })
                 }
-                Err(e) => bail!("Failed to get lattice {}, {e}", lattice),
-            };
+                Err(e) => Err(Status {
+                    code: Code::FailedPrecondition.into(),
+                    message: format!("failed to read lattice: {e}"),
+                    details: vec![],
+                }),
+            }?;
             lattices.push(l);
         }
-        Ok(Some(LatticeGetResponse { lattices }.encode_to_vec().into()))
+        Ok(LatticeGetResponse { lattices })
     }
 
     // TODO if a client disconnects this will hang on to a subscription until it tries to send an
